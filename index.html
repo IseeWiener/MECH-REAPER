@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>MECH-REAPER</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:'Courier New',monospace;image-rendering:pixelated;image-rendering:crisp-edges;}
+#letterbox{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#000;}
+#gameWrap{position:relative;transform-origin:center center;flex-shrink:0;image-rendering:pixelated;image-rendering:crisp-edges;image-rendering:-moz-crisp-edges;}
+#c{display:block;cursor:none;image-rendering:pixelated;image-rendering:crisp-edges;image-rendering:-moz-crisp-edges;image-rendering:-webkit-optimize-contrast;filter:contrast(1.05) brightness(1.02);}
+#hud{position:absolute;top:12px;left:14px;font-size:13px;color:#00ffcc;text-shadow:0 0 4px #00ffcc;pointer-events:none;line-height:2.1;}
+#hud .s{color:#ffd700;}#hud .w{color:#ff6600;}
+#hpbar-wrap{position:absolute;top:12px;right:14px;font-size:11px;color:#00ff88;pointer-events:none;text-align:right;}
+#hpbar{width:150px;height:10px;background:#1a0000;margin-top:3px;border:1px solid currentColor;}
+#hpfill{height:100%;background:#00ff88;width:100%;}
+#heatbar-wrap{position:absolute;bottom:38px;left:50%;margin-left:-90px;width:180px;text-align:center;font-size:10px;color:#ff6600;pointer-events:none;}
+#heatbar{width:180px;height:6px;background:#1a0800;border:1px solid #ff6600;margin:2px 0 0;}
+#heatfill{height:100%;width:0%;background:#00cc44;}
+#heatlabel{height:13px;font-size:10px;margin-top:2px;}
+#wavebar-wrap{position:absolute;bottom:14px;right:14px;width:180px;text-align:right;font-size:10px;color:#444;pointer-events:none;}
+#wavebar{width:180px;height:4px;background:#111;border:1px solid #222;margin:2px 0 0;}
+#wavefill{height:100%;background:#ff6600;width:0%;}
+#fmsg{position:absolute;top:36%;left:0;right:0;text-align:center;font-size:22px;font-weight:bold;color:#ff0055;text-shadow:0 0 10px #ff0055;pointer-events:none;opacity:0;transition:opacity .25s;white-space:nowrap;}
+#countdown{position:absolute;top:42%;left:0;right:0;text-align:center;font-size:64px;font-weight:bold;color:#00ffcc;text-shadow:0 0 20px #00ffcc;pointer-events:none;opacity:0;transition:opacity .2s;}
+.screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;}
+.screen.show{display:flex;}
+#screen-start{background:#0a0a14;}
+#menu-shell{width:100%;height:100%;display:flex;flex-direction:column;}
+#menu-tabs{display:flex;border-bottom:1px solid #1a1a2e;background:#07070f;}
+.tab{padding:13px 26px;font-size:12px;color:#333;cursor:default;border-right:1px solid #1a1a2e;letter-spacing:1px;position:relative;}
+.tab.active{color:#00ffcc;background:#0a0a14;text-shadow:0 0 5px #00ffcc;}
+.tab.active::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:#0a0a14;}
+.tab.disabled{color:#1e1e1e;cursor:not-allowed;}
+.tab.disabled:hover::before{content:'BALD VERFÜGBAR';position:absolute;top:100%;left:50%;transform:translateX(-50%);background:#111;border:1px solid #1a1a1a;color:#333;font-size:10px;padding:4px 8px;white-space:nowrap;z-index:10;margin-top:4px;}
+.tab.quit{margin-left:auto;color:#2a1010;border-left:1px solid #1a1a2e;border-right:none;cursor:pointer;}
+.tab.quit:hover{color:#ff3333;}
+#menu-content{flex:1;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;}
+.tab-panel{display:none;text-align:center;padding:30px 48px;max-width:560px;}
+.tab-panel.active{display:block;}
+#panel-start h1{color:#00ffcc;font-size:36px;letter-spacing:4px;text-shadow:0 0 18px #00ffcc;margin-bottom:4px;}
+.tagline{color:#223;font-size:12px;margin-bottom:26px;letter-spacing:2px;}
+.start-btn{display:inline-block;padding:14px 50px;background:transparent;border:1.5px solid #00ffcc;color:#00ffcc;font-family:'Courier New',monospace;font-size:15px;cursor:pointer;letter-spacing:2px;transition:all .15s;margin-bottom:26px;}
+.start-btn:hover{background:#00ffcc;color:#0a0a14;}
+.keys-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;text-align:left;font-size:11px;}
+.keys-grid .k{color:#666;}.keys-grid .v{color:#2a2a2a;}
+.darkbg{background:rgba(0,0,0,0.88);}
+.box{border:1px solid #1a2a1a;padding:24px 34px;background:#080810;text-align:center;min-width:320px;max-width:560px;max-height:88vh;overflow-y:auto;}
+.box h2{color:#ff0055;font-size:20px;text-shadow:0 0 8px #ff0055;margin-bottom:8px;}
+.box h3{color:#00ffcc;font-size:16px;margin-bottom:8px;}
+.box p{color:#444;font-size:12px;margin-bottom:12px;line-height:1.7;}
+.box .stat{color:#777;font-size:12px;margin-bottom:12px;line-height:1.9;}
+.box .stat span{color:#ffd700;}
+.mbtn{display:block;width:100%;margin:6px 0;padding:10px 14px;background:#080810;border:1px solid #00ffcc;color:#00ffcc;font-family:'Courier New',monospace;font-size:13px;cursor:pointer;transition:background .12s;text-align:left;}
+.mbtn:hover{background:#001a14;}.mbtn.red{border-color:#ff0055;color:#ff0055;}.mbtn.red:hover{background:#1a0010;}
+.mbtn .sub{font-size:10px;color:#333;display:block;margin-top:2px;}.mbtn .sub.warn{color:#ff5500;}
+#shopbox{display:none;margin-top:12px;border-top:1px solid #0e0e0e;padding-top:12px;text-align:left;}
+#shopbox.show{display:block;}
+#mech-panel{display:flex;gap:16px;align-items:flex-start;margin-bottom:12px;}
+#mech-silhouette{flex-shrink:0;width:90px;}
+#mech-silhouette canvas{display:block;}
+#upgrade-slots{flex:1;}
+.slot-row{display:flex;gap:5px;margin-bottom:6px;align-items:center;}
+.slot-label{font-size:9px;color:#444;width:52px;flex-shrink:0;letter-spacing:1px;text-align:right;padding-right:6px;}
+.upg{padding:5px 7px;border:1px solid #1a1a1a;background:#0a0a0a;color:#555;font-family:'Courier New',monospace;font-size:10px;cursor:pointer;flex:1;min-width:80px;transition:border-color .1s,color .1s;}
+.upg:hover:not(:disabled){border-color:#00ffcc;color:#00ffcc;background:#001a14;}
+.upg.owned{border-color:#ffd700;color:#ffd700;background:#0c0b00;cursor:default;}
+.upg .ucost{font-size:9px;color:#333;display:block;margin-top:1px;}
+.upg.owned .ucost{color:#555;}
+#timebar{height:3px;background:#ffd700;width:100%;margin-top:10px;transition:width linear;}
+#shopbox h4{color:#ffd700;margin:0 0 10px;font-size:11px;letter-spacing:1px;}
+/* Settings */
+.keybind-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;border-bottom:1px solid #0e0e18;padding-bottom:10px;}
+.keybind-label{color:#555;font-size:11px;letter-spacing:1px;width:130px;flex-shrink:0;}
+.keybind-btn{background:#080810;border:1px solid #1a1a2e;color:#888;font-family:'Courier New',monospace;font-size:11px;padding:5px 14px;cursor:pointer;min-width:80px;transition:border-color .1s;}
+.keybind-btn:hover{border-color:#00ffcc;color:#00ffcc;}
+.keybind-btn.listening{border-color:#ffd700;color:#ffd700;animation:pulse 0.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+.tab.clickable{cursor:pointer;color:#555;}
+.tab.clickable:hover{color:#00ffcc;}
+#panel-settings{text-align:left;max-width:440px;width:100%;}
+#panel-settings h2{color:#00ffcc;font-size:20px;letter-spacing:3px;margin-bottom:24px;text-align:center;}
+.setting-row{display:flex;align-items:center;gap:16px;margin-bottom:22px;border-bottom:1px solid #0e0e18;padding-bottom:18px;}
+.setting-label{color:#666;font-size:11px;letter-spacing:1px;width:120px;flex-shrink:0;}
+.setting-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:#1a1a2e;outline:none;border-radius:2px;cursor:pointer;}
+.setting-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:#00ffcc;border-radius:50%;cursor:pointer;box-shadow:0 0 6px #00ffcc88;}
+.setting-slider::-moz-range-thumb{width:16px;height:16px;background:#00ffcc;border:none;border-radius:50%;cursor:pointer;}
+.setting-val{color:#00ffcc;font-size:11px;width:32px;text-align:right;flex-shrink:0;}
+.setting-back{display:inline-block;margin-top:16px;padding:10px 32px;background:transparent;border:1px solid #333;color:#555;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;letter-spacing:1px;transition:all .15s;}
+.setting-back:hover{border-color:#00ffcc;color:#00ffcc;}
+/* Highscore im Startmenü */
+#highscore-display{font-size:11px;color:#333;margin-bottom:10px;letter-spacing:1px;}
+#highscore-display span{color:#ffd700;}
+/* Level-Up Menü */
+#levelup-menu{
+  display:none;position:absolute;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.88);align-items:center;justify-content:center;
+  flex-direction:column;gap:20px;z-index:100;
+}
+#levelup-title{color:#ffd700;font-size:22px;letter-spacing:4px;text-shadow:0 0 14px #ffd700;text-align:center;}
+#levelup-title span{color:#ff8800;}
+#levelup-cards{display:flex;gap:16px;justify-content:center;}
+.levelup-card{
+  width:180px;padding:22px 16px;background:#08080e;border:2px solid #333;
+  cursor:pointer;text-align:center;transition:transform .12s,border-color .12s,background .12s;
+}
+.levelup-card:hover{transform:translateY(-4px);background:#0d0d18;}
+.lu-icon{font-size:28px;margin-bottom:8px;}
+.lu-name{font-size:13px;font-weight:bold;letter-spacing:1px;margin-bottom:6px;}
+.lu-desc{font-size:11px;color:#555;line-height:1.5;}
+/* Silhouette Flash */
+#mech-silhouette{position:relative;}
+#silhouette-flash{position:absolute;top:0;left:0;width:90px;height:140px;background:white;opacity:0;pointer-events:none;transition:opacity 0.05s;}
+</style>
+</head>
+<body>
+<div id="letterbox"><div id="gameWrap">
+  <canvas id="c"></canvas>
+  <canvas id="crt" style="position:absolute;top:0;left:0;pointer-events:none;opacity:0.35;"></canvas>
+  <div id="boss-bar" style="position:absolute;top:0;left:0;right:0;height:28px;background:#0a0008;border-bottom:1px solid #ff0055;display:none;align-items:center;padding:0 12px;gap:10px;font-family:'Courier New',monospace;font-size:11px;color:#ff0055;pointer-events:none;">
+    <span id="boss-name" style="letter-spacing:2px;">⚠ BOSS</span>
+    <div style="flex:1;height:8px;background:#220011;border:1px solid #ff0055;"><div id="boss-hp-fill" style="height:100%;background:#ff0055;width:100%;"></div></div>
+    <span id="boss-hp-txt">???</span>
+  </div>
+  <div id="hud">KILLS: <span id="hkills">0</span> &nbsp;|&nbsp; <span class="s">SCHROTT: <span id="hscrap" style="color:#ffd700;">0</span></span><br><span class="w">WELLE: <span id="hwave">1</span></span> &nbsp;|&nbsp; WAFFE: <span id="hwep">Standard</span><br><span id="hnextboss" style="color:#ff0055;font-size:11px;"></span></div>
+  <div id="hpbar-wrap">HP <span id="hhp">100</span>/100<div id="hpbar"><div id="hpfill"></div></div></div>
+  <div id="heatbar-wrap">ÜBERHITZUNG<div id="heatbar"><div id="heatfill"></div></div><div id="heatlabel"></div></div>
+  <div id="stambar-wrap" style="position:absolute;bottom:14px;left:50%;margin-left:-90px;width:180px;text-align:center;font-size:10px;color:#00ccff;pointer-events:none;">AUSDAUER<div id="stambar" style="width:180px;height:5px;background:#001a1a;border:1px solid #00ccff;margin:2px 0 0;"><div id="stamfill" style="height:100%;width:100%;background:#00ccff;"></div></div></div>
+  <div id="wavebar-wrap">FORTSCHRITT<div id="wavebar"><div id="wavefill"></div></div></div>
+  <div id="fmsg"></div>
+  <div id="countdown"></div>
+
+  <div class="screen show" id="screen-start">
+    <div id="menu-shell">
+      <div id="menu-tabs">
+        <div class="tab active" id="tab-start" onclick="switchTab('start')">SPIEL</div>
+        <div class="tab clickable" id="tab-settings" onclick="switchTab('settings')">EINSTELLUNGEN</div>
+        <div class="tab disabled">BESTENLISTE</div>
+        <div class="tab quit" onclick="quitGame()">BEENDEN</div>
+      </div>
+      <div id="menu-content">
+        <div class="tab-panel active" id="panel-start">
+          <h1>MECH-REAPER</h1>
+          <div class="tagline">ÜBERLEBE · SAMMLE · AUFRÜSTEN</div>
+          <button class="start-btn" id="btn-start">▶ STARTEN</button>
+          <div id="highscore-display">HIGHSCORE: <span id="hs-display">0</span></div>
+        </div>
+        <div class="tab-panel" id="panel-settings">
+          <h2>EINSTELLUNGEN</h2>
+
+          <div style="font-size:10px;color:#444;letter-spacing:1px;margin-bottom:12px;">— AUDIO —</div>
+          <div class="setting-row">
+            <span class="setting-label">MUSIK</span>
+            <input type="range" class="setting-slider" id="slider-music" min="0" max="100" value="60">
+            <span class="setting-val" id="val-music">60</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">EFFEKTE (SFX)</span>
+            <input type="range" class="setting-slider" id="slider-sfx" min="0" max="100" value="80">
+            <span class="setting-val" id="val-sfx">80</span>
+          </div>
+
+          <div style="border-top:1px solid #0e0e18;padding-top:16px;margin-top:4px;">
+            <div style="font-size:10px;color:#444;letter-spacing:1px;margin-bottom:12px;">— TASTEN-BELEGUNG —</div>
+            <div style="font-size:10px;color:#333;margin-bottom:12px;">Klicke auf eine Taste und drücke dann die gewünschte Taste.</div>
+            <div class="keybind-row"><span class="keybind-label">LINKS</span><button class="keybind-btn" id="kb-left" onclick="startRebind('left',this)">A</button></div>
+            <div class="keybind-row"><span class="keybind-label">RECHTS</span><button class="keybind-btn" id="kb-right" onclick="startRebind('right',this)">D</button></div>
+            <div class="keybind-row"><span class="keybind-label">SPRINGEN</span><button class="keybind-btn" id="kb-jump" onclick="startRebind('jump',this)">LEERTASTE</button></div>
+            <div class="keybind-row"><span class="keybind-label">DASH</span><button class="keybind-btn" id="kb-dash" onclick="startRebind('dash',this)">C</button></div>
+            <div style="text-align:center;margin-top:8px;">
+              <button class="setting-back" onclick="resetBindings();sndBtnClick();">↺ STANDARD</button>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid #0e0e18;padding-top:16px;margin-top:16px;">
+            <div style="font-size:10px;color:#444;letter-spacing:1px;margin-bottom:10px;">— STEUERUNG —</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:11px;margin-bottom:16px;">
+              <span style="color:#555;">MAUSKLICK</span><span style="color:#2a2a2a;">Schießen</span>
+              <span style="color:#555;">LEERTASTE</span><span style="color:#2a2a2a;">Springen</span>
+              <span style="color:#555;">C</span><span style="color:#2a2a2a;">Dash (Ausdauer)</span>
+              <span style="color:#555;">MAUS OBEN/UNTEN</span><span style="color:#2a2a2a;">Zielwinkel (360°)</span>
+              <span style="color:#555;">ESC</span><span style="color:#2a2a2a;">Pause</span>
+            </div>
+          </div>
+
+          <div style="text-align:center;padding-top:8px;border-top:1px solid #0e0e18;margin-top:8px;">
+            <button class="setting-back" id="btn-settings-back" onclick="switchTab('start');sndBtnClick();">← ZURÜCK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen darkbg" id="screen-pause">
+    <div class="box">
+      <div id="pause-main">
+        <h3>— PAUSE —</h3><p>ESC zum Fortsetzen</p>
+        <button class="mbtn" id="btn-resume" style="text-align:center;">▶ WEITERSPIELEN</button>
+        <button class="mbtn" id="btn-pause-settings" style="text-align:center;">⚙ EINSTELLUNGEN</button>
+        <button class="mbtn red" id="btn-quit-pause" style="text-align:center;">✕ HAUPTMENÜ</button>
+      </div>
+      <div id="pause-settings" style="display:none;">
+        <h3>— EINSTELLUNGEN —</h3>
+        <div class="setting-row" style="margin-top:16px;">
+          <span class="setting-label">MUSIK</span>
+          <input type="range" class="setting-slider" id="slider-music-p" min="0" max="100" value="60">
+          <span class="setting-val" id="val-music-p">60</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">EFFEKTE (SFX)</span>
+          <input type="range" class="setting-slider" id="slider-sfx-p" min="0" max="100" value="80">
+          <span class="setting-val" id="val-sfx-p">80</span>
+        </div>
+        <div style="text-align:center;margin-top:8px;">
+          <button class="setting-back" id="btn-pause-settings-back">← ZURÜCK ZUR PAUSE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen darkbg" id="screen-wave">
+    <div class="box" style="text-align:left;">
+      <h3 id="wtitle">WELLE 1 ABGESCHLOSSEN</h3>
+      <div id="shop-hp-display" style="font-size:13px;margin-bottom:6px;letter-spacing:1px;">❤ HP: 100/100</div>
+      <div style="font-size:11px;color:#444;margin-bottom:10px;" id="wsub"></div>
+      <div style="font-size:11px;color:#777;padding:7px;border:1px solid #111;background:#050508;margin-bottom:12px;" id="wnext"></div>
+      <button class="mbtn" id="btn-levelup" style="display:none;border-color:#ffd700;color:#ffd700;">⚡ FÄHIGKEIT WÄHLEN (LEVEL UP!)</button>
+      <button class="mbtn" id="btn-shop-open">⚙ WERKSTATT<span class="sub">Upgrades · HP +30 · 35s Zeit</span></button>
+      <button class="mbtn red" id="btn-fight-on">▶ WEITER KÄMPFEN<span class="sub warn" id="fight-warn-sub">⚠ Bonus · Mehr Gegner · Kein Heilen</span></button>
+      <div id="shopbox">
+        <h4>— WERKSTATT —</h4>
+        <div id="mech-panel">
+          <div id="mech-silhouette"><canvas id="mechCanvas" width="90" height="140"></canvas><div id="silhouette-flash"></div></div>
+          <div id="upgrade-slots">
+            <div class="slot-row"><span class="slot-label">LINKER ARM</span><div id="slot-left" style="display:flex;gap:5px;flex:1;flex-wrap:wrap;"></div></div>
+            <div class="slot-row"><span class="slot-label">RECHTER ARM</span><div id="slot-right" style="display:flex;gap:5px;flex:1;flex-wrap:wrap;"></div></div>
+            <div class="slot-row"><span class="slot-label">RÜCKEN</span><div id="slot-back" style="display:flex;gap:5px;flex:1;flex-wrap:wrap;"></div></div>
+          </div>
+        </div>
+        <button class="mbtn" id="btn-go" style="text-align:center;">▶ KAMPF FORTSETZEN</button>
+        <div id="timebar"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen darkbg" id="screen-gameover">
+    <div class="box"><h2>MECH ZERSTÖRT</h2>
+      <div class="stat" id="go-stats"></div>
+      <button class="mbtn" id="btn-restart" style="text-align:center;">↺ NEU STARTEN</button>
+      <button class="mbtn red" id="btn-quit-go" style="text-align:center;">✕ HAUPTMENÜ</button>
+    </div>
+  </div>
+</div></div>
+
+<script src="data.js"></script>
+<script src="audio.js"></script>
+<script src="ui.js"></script>
+<script src="game.js"></script>
+<script src="render.js"></script>
+
+  <div id="levelup-menu">
+    <div id="levelup-title">LEVEL UP! <span id="levelup-num">1</span> — WÄHLE EINE FÄHIGKEIT</div>
+    <div id="levelup-cards"></div>
+  </div>
+</body>
+</html>
